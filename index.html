@@ -1,0 +1,250 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0"> 
+<title>SysEx Checksum Calculator</title>
+<link href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css" rel="stylesheet" integrity="sha384-1BmE4kWBq78iYhFldvKuhfTAU6auU8tT94WrHftjDbrCEXSU1oBoqyl2QvZ6jIW3" crossorigin="anonymous">
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js" integrity="sha384-ka7Sk0Gln4gmtz2MlQnikT1wXgYsOg+OMhuP+IlRH9sENBO0LRn5q+8nbTov4+1p" crossorigin="anonymous"></script>
+<script type="module">
+/* global bootstrap */
+import {parseSysEx, calcCheckSumRol, bytesToHex} from './sysex_parser.js';
+import {parseSysExStr} from './string_parser.js';
+
+window.addEventListener('DOMContentLoaded', () => {
+	const elemInput = document.getElementById('my-input');
+	const elemResult = document.getElementById('my-result');
+
+	const errorModal = new bootstrap.Modal(document.getElementById('my-error-modal'));
+
+	// Save as .syx
+	document.getElementById('my-save-as-syx').addEventListener('click', () => {
+		let blob;
+		const sysExStr = parseSysExStr(elemResult.textContent);
+		if (sysExStr && sysExStr.isValid) {
+			const sysExInfo = parseSysEx(sysExStr.bytes);
+			if (sysExInfo) {
+				blob = new Blob([new Uint8Array(sysExStr.bytes)], {type: 'application/octet-stream'});
+			}
+		}
+
+		if (blob) {
+			const dt = new Date();
+			const fileName = `${dt.getFullYear()}-${String(dt.getMonth() + 1).padStart(2, '0')}-${String(dt.getDate()).padStart(2, '0')}_${String(dt.getHours()).padStart(2, '0')}${String(dt.getMinutes()).padStart(2, '0')}${String(dt.getSeconds()).padStart(2, '0')}.syx`;
+
+			const elemLink = document.createElement('a');
+			elemLink.download = fileName;
+			elemLink.href = URL.createObjectURL(blob);
+			document.body.append(elemLink);
+			elemLink.click();
+			elemLink.remove();
+	
+		} else {
+			errorModal.show();
+		}
+	});
+
+	// Copy to clipboard
+	if (!navigator.clipboard) {
+		document.getElementById('my-copy').disabled = true;
+	}
+	document.getElementById('my-copy').addEventListener('click', async () => {
+		await navigator.clipboard.writeText(elemResult.textContent);
+	});
+
+	// Help contents
+	const htmlExamples = '<table class="table table-sm"><thead><tr><th style="width: 50%;">Input</th><th style="width: 50%;">Output</th></tr></thead><tbody>' + [
+		['GS Master Volume: 127', 'F0h 0x41 B\'00010000 H\'42 $12 400004 D\'127'],
+		['SC-88 EQ Low Gain: +7dB', 'f0 41 10 42 12 40 02 01 +7'],
+		['SC Display Letter', 'f0 41 10 45 12 10 00 00 "Display Letter!"'],
+		['Wrong checksum will be fixed', 'f0 41 10 42 12 40 00 7f 00 42 f7'],
+		['XG Master Volume (w/o checksum)', 'f0 43 10 4c 00 00 04 D\'127'],
+		['MU Display Letter', 'f0 43 10 4c 06 00 00\n"Display Letter  " // line 1\n"          for MU" // line 2'],
+	].map(([title, sysExStr]) => {
+		const str = `// ${title}\n${sysExStr}`;
+		return `<tr><td><pre>${str}</pre></td><td><pre>${makeSysExHtml(str)}</pre></td></tr>`;
+	}).join('') + '</tbody></table>';
+	document.getElementById('my-examples').innerHTML = htmlExamples;
+
+	// Handles input to textarea.
+	elemInput.addEventListener('blur', handleInput);
+	elemInput.addEventListener('input', handleInput);
+	function handleInput() {
+		elemResult.innerHTML = makeSysExHtml(elemInput.value);
+	}
+
+	function makeSysExHtml(inputStr) {
+		const sysExStr = parseSysExStr(inputStr);
+		if (!sysExStr) {
+			return '';
+		}
+		if (!sysExStr.isValid) {
+			const {index} = sysExStr;
+			return `${inputStr.slice(0, index)}<span class="text-danger">${inputStr.slice(index)}</span>`;
+		}
+
+		const {bytes} = sysExStr;
+		let sysExInfo;
+		if (bytes.length >= 2) {
+			const indexF7 = bytes.indexOf(0xf7);
+			if (bytes[0] === 0xf0 && indexF7 >= 0) {
+				// Parses the bytes between the beginning of F0h and the first F7h.
+				sysExInfo = parseSysEx(bytes.slice(0, indexF7 + 1));
+			} else if (bytes[0] === 0xf0 && bytes.length >= 3) {
+				// Parses the bytes with dummy checksum and F7h.
+				sysExInfo = parseSysEx([...bytes, 0x00, 0xf7]);
+				if (sysExInfo && sysExInfo.isNeededCheckSum) {
+					// If the SysEx needs checksum, parses it again with proper checksum.
+					sysExInfo = parseSysEx([...bytes, sysExInfo.calculatedCheckSum, 0xf7]);
+					console.assert(!sysExInfo.isCheckSumError);
+				} else {
+					// If the SysEx seems not to need checksum, parses it again without checksum.
+					sysExInfo = parseSysEx([...bytes, 0xf7]);
+				}
+			}
+		}
+
+		if (sysExInfo) {
+			const {bytes} = sysExInfo;
+
+			// If the input string can be parsed as a SysEx, displays it as a SysEx.
+			if (sysExInfo.isNeededCheckSum) {
+				// SysEx with checksum
+				const {isCheckSumError, checkSum, calculatedCheckSum, range, rangeIndex} = sysExInfo;
+				return [
+					`<span class="text-primary">f0</span>`,
+					`${bytesToHex(bytes.slice(1, rangeIndex))}`,
+					`<span class="text-info">${bytesToHex(bytes.slice(rangeIndex, rangeIndex + range.length))}</span>`,
+					(isCheckSumError) ?
+						`<span class="my-checksum text-danger text-decoration-underline" data-original="${bytesToHex([checkSum])}">${bytesToHex([calculatedCheckSum])}</span>` :
+						`<span class="my-checksum text-success text-decoration-underline">${bytesToHex([checkSum])}</span>`,
+					`<span class="text-primary">f7</span>`,
+				].join(' ');
+
+			} else {
+				// SysEx without checksum
+				return [
+					`<span class="text-primary">f0</span>`,
+					`${bytesToHex(bytes.slice(1, -1))}`,
+					`<span class="text-primary">f7</span>`,
+				].join(' ');
+			}
+
+		} else if (bytes.length > 0) {
+			// If the input string can be parsed as a SysEx, displays it as a raw payload. (with calculated checksum if possible)
+			if (bytes.every((e) => (0x00 <= e && e < 0x80))) {
+				return [
+					`<span class="text-info">${bytesToHex(bytes)}</span>`,
+					`<span class="text-success text-decoration-underline">${bytesToHex([calcCheckSumRol(bytes)])}</span>`,
+				].join(' ');
+			} else {
+				return bytes.map((e) => (0x00 <= e && e < 0x80) ? bytesToHex([e]) : `<span class="text-warning">${bytesToHex([e])}</span>`).join(' ');
+			}
+		}
+
+		return '';
+	}
+});
+</script>
+<style>
+pre {
+	white-space: pre-wrap;
+}
+
+.my-checksum[data-original]::after {
+	content: attr(data-original);
+	margin-left: 0.125rem;
+	text-decoration: line-through;
+	opacity: 0.5;
+}
+</style>
+</head>
+
+<body>
+	<!-- Navbar -->
+	<nav class="navbar navbar-light bg-light">
+		<div class="container">
+				<h1 class="h6"><span class="navbar-brand">SysEx Checksum Calculator</span></h1>
+			</div>
+		</div>
+	</nav>
+
+	<!-- Main screen -->
+	<main class="container mt-3">
+		<div class="row">
+			<div class="col d-flex justify-content-between">
+				<h2 class="h6">SysEx Text</h2>
+				<button id="my-help" type="button" class="btn btn-outline-primary btn-sm" data-bs-toggle="modal" data-bs-target="#my-help-modal">Help</button>
+			</div>
+		</div>
+		<div class="row mt-1">
+			<div class="col">
+				<textarea id="my-input" class="form-control font-monospace" style="min-height: 8rem;"></textarea>
+			</div>
+		</div>
+		<div class="row mt-3">
+			<div class="col d-flex justify-content-between">
+				<h2 class="h6">Result</h2>
+				<div>
+					<button id="my-save-as-syx" type="button" class="btn btn-outline-primary btn-sm">Save as .syx</button>
+					<button id="my-copy" type="button" class="btn btn-outline-primary btn-sm">Copy to clipboard</button>
+				</div>
+			</div>
+		</div>
+		<div class="row mt-1">
+			<div class="col">
+				<pre id="my-result" class="border rounded-2 p-2" style="min-height: 4rem;"></pre>
+			</div>
+		</div>
+	</main>
+
+	<!-- Help modal -->
+	<div id="my-help-modal" class="modal" tabindex="-1">
+		<div class="modal-dialog modal-xl">
+			<div class="modal-content">
+				<div class="modal-header">
+					<h2 class="modal-title h5">Reference</h2>
+					<button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+				</div>
+				<div class="modal-body">
+					<h3 class="h6">Legend</h3>
+					<table class="table table-borderless table-sm">
+						<tbody>
+							<tr>
+								<td><code class="text-info">xx .. .. xx</code></td>
+								<td>Payload (range of calculation)</td>
+							</tr>
+							<tr>
+								<td><code class="text-success text-decoration-underline">cs</code></td>
+								<td>Checksum</td>
+							</tr>
+							<tr>
+								<td><code class="my-checksum text-danger text-decoration-underline" data-original="ng">cs</code></td>
+								<td>Corrected checksum (<code class="text-danger text-decoration-underline">ng</code>: original wrong value)</td>
+							</tr>
+						</tbody>
+					</table>
+
+					<h3 class="h6">Examples</h3>
+					<div id="my-examples"></div>
+				</div>
+			</div>
+		</div>
+	</div>
+
+	<!-- Error modal -->
+	<div id="my-error-modal" class="modal" tabindex="-1" role="dialog">
+		<div class="modal-dialog">
+			<div class="modal-content">
+				<div class="modal-header">
+					<h2 class="modal-title h5">Error</h2>
+					<button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+				</div>
+				<div class="modal-body">
+					<p>Invalid SysEx.</p>
+				</div>
+			</div>
+		</div>
+	</div>
+</body>
+</html>

@@ -1,0 +1,28 @@
+{
+  "name": "sysex-checksum",
+  "version": "0.1.0",
+  "description": "Calculates a checksum at the end of SysEx",
+  "engines": {
+    "node": ">=12.17"
+  },
+  "type": "module",
+  "main": "sysex_checksum.js",
+  "module": "sysex_checksum.js",
+  "scripts": {
+    "lint": "eslint *.js index.html"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+ssh://git@github.com/shingo45endo/sysex-checksum.git"
+  },
+  "author": "shingo45endo",
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/shingo45endo/sysex-checksum/issues"
+  },
+  "homepage": "https://github.com/shingo45endo/sysex-checksum#readme",
+  "devDependencies": {
+    "eslint": "^7.32.0",
+    "eslint-plugin-html": "^6.1.2"
+  }
+}
