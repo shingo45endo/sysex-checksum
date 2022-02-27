@@ -14,35 +14,103 @@ import {parseSysExStr} from './string_parser.js';
 window.addEventListener('DOMContentLoaded', () => {
 	const elemInput = document.getElementById('my-input');
 	const elemResult = document.getElementById('my-result');
+	const elemMidiOut = document.getElementById('my-midi-out-devices');
+	const elemSendMidi = document.getElementById('my-send-midi');
 
 	const errorModal = new bootstrap.Modal(document.getElementById('my-error-modal'));
 
+	let currentMidiOut;
+	(async () => {
+		elemSendMidi.disabled = true;
+
+		// Sets up MIDI devices.
+		const midiAccess = await navigator.requestMIDIAccess({sysex: true});
+		midiAccess.addEventListener('statechange', updateMidiDevices);
+		updateMidiDevices();
+
+		// Switches current MIDI devices.
+		elemMidiOut.addEventListener('change', (event) => {
+			currentMidiOut = null;
+			elemSendMidi.disabled = true;
+
+			const id = event.target.options[event.target.selectedIndex].id;
+			for (const output of [...midiAccess.outputs.values()]) {
+				if (output.id === id) {
+					currentMidiOut = output;
+					elemSendMidi.disabled = false;
+					break;
+				}
+			}
+		});
+
+		function updateMidiDevices() {
+			// Updates the current MIDI devices.
+			if (currentMidiOut && currentMidiOut.connection !== 'open') {
+				currentMidiOut = null;
+				elemSendMidi.disabled = true;
+			}
+
+			// Updates the list.
+			elemMidiOut.innerHTML = '<option>Disconnected</option>';
+			for (const output of [...midiAccess.outputs.values()]) {
+				const isSelected = (currentMidiOut && currentMidiOut.id === output.id);
+				elemMidiOut.insertAdjacentHTML('beforeend', `<option id="${output.id}" ${(isSelected) ? 'selected' : ''}>${output.name}</option>`);
+				if (isSelected) {
+					elemSendMidi.disabled = false;
+				}
+			}
+		}
+	})().catch((error) => {
+		console.error(error);
+		elemMidiOut.disabled = true;
+		elemSendMidi.disabled = true;
+	});
+
+	// Send to MIDI device
+	elemSendMidi.addEventListener('click', () => {
+		const bytes = getCurrentSysExBytes();
+		if (!bytes) {
+			errorModal.show();
+			return;
+		}
+
+		if (currentMidiOut) {
+			currentMidiOut.send(bytes);
+		}
+	});
+
 	// Save as .syx
 	document.getElementById('my-save-as-syx').addEventListener('click', () => {
-		let blob;
+		const bytes = getCurrentSysExBytes();
+		if (!bytes) {
+			errorModal.show();
+			return;
+		}
+
+		const blob = new Blob([new Uint8Array(bytes)], {type: 'application/octet-stream'});
+
+		const dt = new Date();
+		const fileName = `${dt.getFullYear()}-${String(dt.getMonth() + 1).padStart(2, '0')}-${String(dt.getDate()).padStart(2, '0')}_${String(dt.getHours()).padStart(2, '0')}${String(dt.getMinutes()).padStart(2, '0')}${String(dt.getSeconds()).padStart(2, '0')}.syx`;
+
+		const elemLink = document.createElement('a');
+		elemLink.download = fileName;
+		elemLink.href = URL.createObjectURL(blob);
+		document.body.append(elemLink);
+		elemLink.click();
+		elemLink.remove();
+	});
+
+	function getCurrentSysExBytes() {
 		const sysExStr = parseSysExStr(elemResult.textContent);
 		if (sysExStr && sysExStr.isValid) {
 			const sysExInfo = parseSysEx(sysExStr.bytes);
 			if (sysExInfo) {
-				blob = new Blob([new Uint8Array(sysExStr.bytes)], {type: 'application/octet-stream'});
+				return sysExStr.bytes;
 			}
 		}
 
-		if (blob) {
-			const dt = new Date();
-			const fileName = `${dt.getFullYear()}-${String(dt.getMonth() + 1).padStart(2, '0')}-${String(dt.getDate()).padStart(2, '0')}_${String(dt.getHours()).padStart(2, '0')}${String(dt.getMinutes()).padStart(2, '0')}${String(dt.getSeconds()).padStart(2, '0')}.syx`;
-
-			const elemLink = document.createElement('a');
-			elemLink.download = fileName;
-			elemLink.href = URL.createObjectURL(blob);
-			document.body.append(elemLink);
-			elemLink.click();
-			elemLink.remove();
-	
-		} else {
-			errorModal.show();
-		}
-	});
+		return null;
+	}
 
 	// Copy to clipboard
 	if (!navigator.clipboard) {
@@ -165,6 +233,12 @@ pre {
 	<nav class="navbar navbar-light bg-light">
 		<div class="container">
 			<h1 class="h6"><span class="navbar-brand">SysEx Checksum Calculator</span></h1>
+			<form class="d-flex">
+				<div class="input-group">
+					<label for="my-midi-out-devices" class="input-group-text">MIDI Out</label>
+					<select id="my-midi-out-devices" class="form-select form-select-sm" style="min-width: 10rem;"></select>
+				</div>
+			</form>
 		</div>
 	</nav>
 
@@ -173,7 +247,7 @@ pre {
 		<div class="row">
 			<div class="col d-flex justify-content-between">
 				<h2 class="h6">SysEx Text</h2>
-				<button id="my-help" type="button" class="btn btn-outline-primary btn-sm" data-bs-toggle="modal" data-bs-target="#my-help-modal">Help</button>
+				<button id="my-help" type="button" class="btn btn-outline-secondary btn-sm" data-bs-toggle="modal" data-bs-target="#my-help-modal">Help</button>
 			</div>
 		</div>
 		<div class="row mt-1">
@@ -185,8 +259,9 @@ pre {
 			<div class="col d-flex justify-content-between">
 				<h2 class="h6">Result</h2>
 				<div>
-					<button id="my-save-as-syx" type="button" class="btn btn-outline-primary btn-sm">Save as .syx</button>
-					<button id="my-copy" type="button" class="btn btn-outline-primary btn-sm">Copy to clipboard</button>
+					<button id="my-save-as-syx" type="button" class="btn btn-outline-secondary btn-sm ms-1">Save as .syx</button>
+					<button id="my-copy" type="button" class="btn btn-outline-secondary btn-sm ms-1">Copy to clipboard</button>
+					<button id="my-send-midi" type="button" class="btn btn-primary btn-sm ms-1">Send to MIDI device</button>
 				</div>
 			</div>
 		</div>
