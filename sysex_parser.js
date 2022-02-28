@@ -50,7 +50,7 @@ const parsers = Object.freeze([
 		regexp: /^f0 44 11 .. .. 0[24] .. .. .. .. .. .. .. .. ((?:.. .. .. )+).. f7/u,
 		checker: calcCheckSumRol,
 	},
-	// Casio: Oneway/Handshake Bulk Parameter Set Sent (OBS/HBS)
+	// Casio: Oneway/Handshake Bulk Parameter Set Send (OBS/HBS)
 	{
 		regexp: /^f0 44 15 .. .. 0[46] .. .. .. .. .. .. .. .. ((?:.. .. .. )+).. f7/u,
 		checker: calcCheckSumRol,
@@ -114,7 +114,7 @@ export function parseSysEx(bytes) {
 
 	// Checks whether it is a valid SysEx.
 	const sysExStr = bytesToHex(bytes);
-	if (!/^f0 (?:0[1-9a-f]|[1-5].|00 0[0-2] [0-7].|00 2[0-2] [0-7].|00 40 [0-7].|00 48 [0-7].) (?:[0-7]. )*f7$/u.test(sysExStr)) {
+	if (!/^f0 (?:0[1-9a-f]|[1-5].|7[def]|00 0[0-2] [0-7].|00 2[0-2] [0-7].|00 40 [0-7].|00 48 [0-7].) (?:[0-7]. )*f7$/u.test(sysExStr)) {
 		return null;
 	}
 	console.assert(bytes.length >= 3);
