@@ -9,7 +9,7 @@ What is this?
 
 This application calculates a checksum at the end of SysEx bytes (mainly for Roland MIDI devices).
 
-SysEx, or System Exclusive message have their own formats depending on the manufacturers and the devices. As for Roland devices, from the days of the D-50 (released in 1987) to the present, require a checksum at the end of the SysEx. Other than Roland, some devices require such kind of checksum. This application will help you to calculate a checksum of the recognized payload range based on the input SysEx format.
+SysEx, or System Exclusive message have their own formats depending on the manufacturers and the devices. As for Roland devices, from the days of the D-50 (released in 1987) to the present, they require a checksum at the end of the SysEx. Other than Roland, some devices require such kind of checksum. This application will help you to calculate a checksum of the recognized payload range based on the input SysEx format.
 
 
 How to Use
@@ -60,7 +60,7 @@ Supported SysEx Formats
 	* Request Data commands (RQD)
 	* Want to Send Data commands (WSD)
 * Yamaha XG and later synths
-	* Bulk dump commands
+	* Bulk Dump commands
 * Yamaha GM sound modules (TG100, TG300, and MU5)
 	* Parameter Change commands
 	* Bulk Dump Request commands
@@ -77,7 +77,7 @@ Supported SysEx Formats
 	* Dump commands
 * Casio PX and WK series
 	* Oneway/Handshake Parameter Set Bulk Send commands (BDS/HDS)
-	* Oneway/Handshake Bulk Parameter Set Sent commands (OBS/HBS)
+	* Oneway/Handshake Bulk Parameter Set Send commands (OBS/HBS)
 * Suzuki BH-1000 (including Eniac BH-1000 and Hammond GM-1000)
 	* Data Set 1 commands
 * E-mu Proteus series
