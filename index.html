@@ -102,7 +102,7 @@ window.addEventListener('DOMContentLoaded', () => {
 
 	function getCurrentSysExBytes() {
 		const sysExStr = parseSysExStr(elemResult.textContent);
-		if (sysExStr && sysExStr.isValid) {
+		if (sysExStr?.isValid) {
 			const sysExInfo = parseSysEx(sysExStr.bytes);
 			if (sysExInfo) {
 				return sysExStr.bytes;
@@ -224,7 +224,7 @@ window.addEventListener('DOMContentLoaded', () => {
 		e.stopPropagation();
 		e.preventDefault();
 
-		if (!e.dataTransfer || !e.dataTransfer.files || e.dataTransfer.files.length === 0) {
+		if ((e?.dataTransfer?.files?.length ?? 0) === 0) {
 			errorModal.show();
 			return;
 		}
@@ -241,7 +241,7 @@ window.addEventListener('DOMContentLoaded', () => {
 
 			// Checks whether the .syx file begins with F0 and contains F7 or not.
 			const bytes = new Uint8Array(buf);
-			if (bytes.length === 0 || bytes[0] !== 0xf0) {
+			if (bytes?.[0] !== 0xf0) {
 				errorModal.show();
 				return;
 			}

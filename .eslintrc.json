@@ -1,11 +1,12 @@
 {
 	"env": {
 		"browser": true,
-		"es2017": true
+		"es2020": true,
+		"node": true
 	},
 	"extends": "eslint:all",
 	"parserOptions": {
-		"ecmaVersion": 2018,
+		"ecmaVersion": 2020,
 		"sourceType": "module"
 	},
 	"plugins": [
@@ -44,7 +45,7 @@
 		"no-use-before-define": ["error", "nofunc"],
 		"no-underscore-dangle": ["error", {"allowAfterThis": true}],
 		"no-unused-vars": ["error", {"argsIgnorePattern": "^_$", "varsIgnorePattern": "^_$"}],
-		"quote-props": ["error", "consistent-as-needed"],
+		"quote-props": ["error", "consistent"],
 		"space-before-function-paren": ["error", {
 			"anonymous": "never",
 			"named": "never",

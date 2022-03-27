@@ -3,13 +3,13 @@
   "version": "0.1.0",
   "description": "Calculates a checksum at the end of SysEx",
   "engines": {
-    "node": ">=12.17"
+    "node": ">=14"
   },
   "type": "module",
   "main": "sysex_checksum.js",
   "module": "sysex_checksum.js",
   "scripts": {
-    "lint": "eslint *.js index.html"
+    "lint": "eslint {*.js,*.html}"
   },
   "repository": {
     "type": "git",
@@ -23,6 +23,6 @@
   "homepage": "https://github.com/shingo45endo/sysex-checksum#readme",
   "devDependencies": {
     "eslint": "^7.32.0",
-    "eslint-plugin-html": "^6.1.2"
+    "eslint-plugin-html": "^6.2.0"
   }
 }
