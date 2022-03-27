@@ -212,6 +212,54 @@ window.addEventListener('DOMContentLoaded', () => {
 
 		return '';
 	}
+
+	// Handles D&D related events.
+	['dragstart', 'drag', 'dragenter', 'dragleave', 'dragover', 'drop', 'dragend'].forEach((eventName) => {
+		document.addEventListener(eventName, (e) => {
+			e.stopPropagation();
+			e.preventDefault();
+		});
+	});
+	document.addEventListener('drop', async (e) => {
+		e.stopPropagation();
+		e.preventDefault();
+
+		if (!e.dataTransfer || !e.dataTransfer.files || e.dataTransfer.files.length === 0) {
+			errorModal.show();
+			return;
+		}
+
+		// Reads and parses the .syx file.
+		try {
+			// Reads the .syx file.
+			const buf = await new Promise((resolve, reject) => {
+				const reader = new FileReader();
+				reader.onload = () => resolve(reader.result);
+				reader.onerror = (e) => reject(e);
+				reader.readAsArrayBuffer(e.dataTransfer.files[0]);
+			});
+
+			// Checks whether the .syx file begins with F0 and contains F7 or not.
+			const bytes = new Uint8Array(buf);
+			if (bytes.length === 0 || bytes[0] !== 0xf0) {
+				errorModal.show();
+				return;
+			}
+			const indexF7 = bytes.indexOf(0xf7);
+			if (indexF7 < 0) {
+				errorModal.show();
+				return;
+			}
+
+			// Sets the first SysEx to textarea and update the result.
+			elemInput.value = bytesToHex(bytes.slice(0, indexF7 + 1));
+			handleInput();	// Kicks the input handler directly.
+
+		} catch (e) {
+			console.error(e);
+			errorModal.show();
+		}
+	});
 });
 </script>
 <style>
