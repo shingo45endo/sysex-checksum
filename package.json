@@ -6,8 +6,6 @@
     "node": ">=14"
   },
   "type": "module",
-  "main": "sysex_checksum.js",
-  "module": "sysex_checksum.js",
   "scripts": {
     "lint": "eslint {*.js,*.html}"
   },
