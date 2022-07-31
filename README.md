@@ -9,7 +9,7 @@ What is this?
 
 This application calculates a checksum at the end of SysEx bytes (mainly for Roland MIDI devices).
 
-SysEx, or System Exclusive message have their own formats depending on the manufacturers and the devices. As for Roland devices, from the days of the D-50 (released in 1987) to the present, they require a checksum at the end of the SysEx. Other than Roland, some devices require such kind of checksum. This application will help you to calculate a checksum of the recognized payload range based on the input SysEx format.
+SysEx, or System Exclusive message have their own formats depending on the manufacturers and the devices. As for Roland devices, from the days of the S-10 (released in 1986) to the present, they require a checksum at the end of the SysEx. Other than Roland, some devices require such kind of checksum. This application will help you to calculate a checksum of the recognized payload range based on the input SysEx format.
 
 
 How to Use
@@ -44,7 +44,7 @@ The input SysEx string can contain the special notations other than hexadecimal.
 | `"\b\f\n\r\t"` | `08 0c 0a 0d 09` | 2-character escape sequence in string (control codes) |
 | `"\x00"`       | `00`       | 2-digit hexadecimal escape sequence in string |
 | `"\u0000"`     | `00`       | 4-digit hexadecimal escape sequence in string (don't exceed 8-bit range) |
-| `"→←"`         | `7e 7f`    | Allow characters are mapped to \x7e and \x7f (like HD44780 character set) |
+| `"→←"`         | `7e 7f`    | Allow characters are mapped to `\x7e` and `\x7f` (like HD44780 character set) |
 
 * Spaces and commas are treated as whitespace and are considered to be delimiters.
 * C/C++ style comments are valid.
@@ -53,7 +53,7 @@ The input SysEx string can contain the special notations other than hexadecimal.
 Supported SysEx Formats
 -----------------------
 
-* Roland MIDI devices (D-50 and later)
+* Roland MIDI devices (S-10 and later)
 	* Data Set 1 commands (DT1)
 	* Request Data 1 commands (RQ1)
 	* Data Set commands (DAT)
