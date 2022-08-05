@@ -187,7 +187,7 @@ window.addEventListener('DOMContentLoaded', () => {
 						`<span class="my-checksum text-danger text-decoration-underline" data-original="${bytesToHex([checkSum])}">${bytesToHex([calculatedCheckSum])}</span>` :
 						`<span class="my-checksum text-success text-decoration-underline">${bytesToHex([checkSum])}</span>`,
 					`<span class="text-primary">f7</span>`,
-				].join(' ');
+				].filter((str) => str.length > 0).join(' ');
 
 			} else {
 				// SysEx without checksum
