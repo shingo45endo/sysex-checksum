@@ -55,6 +55,11 @@ const parsers = Object.freeze([
 		regexp: /^f0 44 15 .. .. 0[46] .. .. .. .. .. .. .. .. ((?:.. .. .. )+).. f7/u,
 		checker: calcCheckSumRol,
 	},
+	// Technics: Data Request, Individual Data, Data Block, and Continuing Data
+	{
+		regexp: /^f0 (50 (?:2b|2c|2d|7e) (?:.. )+).. f7/u,
+		checker: calcCheckXor,
+	},
 	// Suzuki BH-1000: Data Set 1
 	{
 		regexp: /^f0 55 .. 42 12 ((?:.. )+).. f7/u,

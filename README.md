@@ -78,6 +78,11 @@ Supported SysEx Formats
 * Casio PX and WK series
 	* Oneway/Handshake Parameter Set Bulk Send commands (BDS/HDS)
 	* Oneway/Handshake Bulk Parameter Set Send commands (OBS/HBS)
+* Technics SX series
+	* Data Request commands (DRQ)
+	* Individual Data commands (ITR)
+	* Data Block commands (BTR)
+	* Continuing Data commands (CDD)
 * Suzuki BH-1000 (including Eniac BH-1000 and Hammond GM-1000)
 	* Data Set 1 commands
 * E-mu Proteus series
